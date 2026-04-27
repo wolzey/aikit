@@ -20,7 +20,7 @@ If no arguments are provided, run a full analysis.
 
 Scan the current repository, discover every significant technology in use, then generate a set of `.claude/skills/<technology>/` directories — each containing a `SKILL.md` and `references/patterns.md` — that Claude auto-loads as background knowledge when working with relevant files.
 
-Optionally create or update a `.claude/CLAUDE.md` with a repo overview, commands, and architecture summary. Also optionally create or update an `AGENTS.md` at the repo root for Codex (OpenAI's coding agent) using the same content.
+Optionally create or update a `.claude/CLAUDE.md` with a repo overview, commands, and architecture summary. Also optionally create or update an `AGENTS.md` at the repo root — an open standard supported by Codex, Cursor, VS Code, Gemini, and other AI coding tools — using the same content.
 
 ---
 
@@ -179,27 +179,27 @@ If updating an existing CLAUDE.md, preserve any existing content and merge new s
 
 ---
 
-## Phase 4b: AGENTS.md (Codex)
+## Phase 4b: AGENTS.md (Codex / Cursor / other AI tools)
 
 Skip this phase if `--skip-agents-md` was passed.
 
-`AGENTS.md` is the equivalent of `CLAUDE.md` for Codex (OpenAI's coding agent). It lives at the repo root (not under `.claude/`) and contains the same kind of repo overview, commands, architecture, and conventions content.
+`AGENTS.md` is an open standard equivalent of `CLAUDE.md` supported by Codex, Cursor, VS Code, Gemini, Android Studio, and other AI coding tools. It lives at the repo root (not under `.claude/`) and contains the same kind of repo overview, commands, architecture, and conventions content.
 
 ### Step 1 — Check for existing AGENTS.md
 Look for `AGENTS.md` at the repo root.
 
 ### Step 2 — Ask the user
 Use AskUserQuestion:
-- If a CLAUDE.md was just created/updated in Phase 4: "Would you like to also generate an `AGENTS.md` at the repo root for Codex? It will mirror the CLAUDE.md content."
+- If a CLAUDE.md was just created/updated in Phase 4: "Would you like to also generate an `AGENTS.md` at the repo root for Codex / Cursor / other AI tools? It will mirror the CLAUDE.md content."
 - If AGENTS.md already exists: "An `AGENTS.md` already exists at the repo root. Would you like to update it with findings from this analysis, or leave it as-is?"
-- If no AGENTS.md and no CLAUDE.md was generated: "Would you like to create an `AGENTS.md` at the repo root for Codex with a repo overview, commands, and architecture summary?"
+- If no AGENTS.md and no CLAUDE.md was generated: "Would you like to create an `AGENTS.md` at the repo root for Codex / Cursor / other AI tools with a repo overview, commands, and architecture summary?"
 
 ### Step 3 — Generate AGENTS.md
 If the user says yes:
 - Reuse the same content structure as [claude-md-template.md](references/claude-md-template.md) — the body content is identical.
 - Write to `AGENTS.md` at the repo root (NOT under `.claude/`).
 - If a CLAUDE.md was generated in Phase 4, you may copy its content directly to AGENTS.md to keep them in sync.
-- Skip the "Generated Skills" section's `.claude/skills/` paths if they would not apply to Codex; otherwise leave the section in — Codex users may still find the skill references useful as documentation.
+- Skip the "Generated Skills" section's `.claude/skills/` paths if they would not apply to non-Claude tools; otherwise leave the section in — users of other tools may still find the skill references useful as documentation.
 
 If updating an existing AGENTS.md, preserve any existing content and merge new sections. Do not overwrite user-written content. Add a comment `<!-- Updated by /conjure on YYYY-MM-DD -->` at the bottom.
 
