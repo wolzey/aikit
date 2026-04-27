@@ -1,10 +1,6 @@
 ---
 name: conjure
-description: |
-  Analyze a repository to discover technologies, extract patterns and conventions, 
-  and generate per-technology Claude skills. Use when the user asks to "conjure skills",
-  "analyze this repo", "generate skills for this codebase", "index the codebase",
-  "scan technologies", or "set up Claude for this repo".
+description: 'Analyze a repository to discover technologies, extract patterns and conventions, and generate per-technology Claude skills. Use when the user asks to "conjure skills", "analyze this repo", "generate skills for this codebase", "index the codebase", "scan technologies", or "set up Claude for this repo".'
 argument-hint: [--update] [--only tech1,tech2] [--skip-claude-md] [--skip-agents-md]
 ---
 
