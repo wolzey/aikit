@@ -5,13 +5,14 @@ description: |
   and generate per-technology Claude skills. Use when the user asks to "conjure skills",
   "analyze this repo", "generate skills for this codebase", "index the codebase",
   "scan technologies", or "set up Claude for this repo".
-argument-hint: [--update] [--only tech1,tech2] [--skip-claude-md]
+argument-hint: [--update] [--only tech1,tech2] [--skip-claude-md] [--skip-agents-md]
 ---
 
 Parse `$ARGUMENTS` as follows:
 - **--update**: Re-analyze and update existing skills instead of skipping them
 - **--only tech1,tech2**: Only analyze the specified technologies (comma-separated, lowercase)
 - **--skip-claude-md**: Skip the CLAUDE.md creation/update prompt
+- **--skip-agents-md**: Skip the AGENTS.md creation/update prompt
 
 If no arguments are provided, run a full analysis.
 
@@ -19,7 +20,7 @@ If no arguments are provided, run a full analysis.
 
 Scan the current repository, discover every significant technology in use, then generate a set of `.claude/skills/<technology>/` directories — each containing a `SKILL.md` and `references/patterns.md` — that Claude auto-loads as background knowledge when working with relevant files.
 
-Optionally create or update a `.claude/CLAUDE.md` with a repo overview, commands, and architecture summary.
+Optionally create or update a `.claude/CLAUDE.md` with a repo overview, commands, and architecture summary. Also optionally create or update an `AGENTS.md` at the repo root for Codex (OpenAI's coding agent) using the same content.
 
 ---
 
@@ -178,6 +179,32 @@ If updating an existing CLAUDE.md, preserve any existing content and merge new s
 
 ---
 
+## Phase 4b: AGENTS.md (Codex)
+
+Skip this phase if `--skip-agents-md` was passed.
+
+`AGENTS.md` is the equivalent of `CLAUDE.md` for Codex (OpenAI's coding agent). It lives at the repo root (not under `.claude/`) and contains the same kind of repo overview, commands, architecture, and conventions content.
+
+### Step 1 — Check for existing AGENTS.md
+Look for `AGENTS.md` at the repo root.
+
+### Step 2 — Ask the user
+Use AskUserQuestion:
+- If a CLAUDE.md was just created/updated in Phase 4: "Would you like to also generate an `AGENTS.md` at the repo root for Codex? It will mirror the CLAUDE.md content."
+- If AGENTS.md already exists: "An `AGENTS.md` already exists at the repo root. Would you like to update it with findings from this analysis, or leave it as-is?"
+- If no AGENTS.md and no CLAUDE.md was generated: "Would you like to create an `AGENTS.md` at the repo root for Codex with a repo overview, commands, and architecture summary?"
+
+### Step 3 — Generate AGENTS.md
+If the user says yes:
+- Reuse the same content structure as [claude-md-template.md](references/claude-md-template.md) — the body content is identical.
+- Write to `AGENTS.md` at the repo root (NOT under `.claude/`).
+- If a CLAUDE.md was generated in Phase 4, you may copy its content directly to AGENTS.md to keep them in sync.
+- Skip the "Generated Skills" section's `.claude/skills/` paths if they would not apply to Codex; otherwise leave the section in — Codex users may still find the skill references useful as documentation.
+
+If updating an existing AGENTS.md, preserve any existing content and merge new sections. Do not overwrite user-written content. Add a comment `<!-- Updated by /conjure on YYYY-MM-DD -->` at the bottom.
+
+---
+
 ## Phase 5: Summary
 
 Print a summary table:
@@ -190,6 +217,7 @@ prisma              | .claude/skills/prisma/SKILL.md + 2 ref | Created
 typescript          | .claude/skills/typescript/SKILL.md     | Updated
 jest                | .claude/skills/jest/SKILL.md + 1 ref   | Skipped (exists)
 CLAUDE.md           | .claude/CLAUDE.md                      | Created
+AGENTS.md           | AGENTS.md                              | Created
 ```
 
 Then print: "Skills conjured. Claude will now auto-load these when working with relevant files in this repo."

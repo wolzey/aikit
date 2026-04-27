@@ -33,6 +33,7 @@ Analyzes a repository, discovers every technology in use, and generates per-tech
 3. Generates `.claude/skills/<tech>/` directories with `SKILL.md` and reference files
 4. Generated skills auto-load when Claude works with relevant files — no manual setup needed
 5. Optionally creates a `.claude/CLAUDE.md` with repo overview, commands, and architecture
+6. Optionally creates an `AGENTS.md` at the repo root for Codex (OpenAI's coding agent)
 
 **Usage:**
 
@@ -49,6 +50,7 @@ Options:
 | `--update` | Re-analyze and update existing skills |
 | `--only nestjs,prisma` | Only analyze specific technologies |
 | `--skip-claude-md` | Skip the CLAUDE.md creation prompt |
+| `--skip-agents-md` | Skip the AGENTS.md (Codex) creation prompt |
 
 **Example output:**
 
