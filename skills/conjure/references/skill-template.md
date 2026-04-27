@@ -151,6 +151,22 @@ Before writing a generated skill, verify:
 - [ ] `references/patterns.md` is 3000-6000 characters
 - [ ] `user-invocable` is set to `false`
 
+### Security & accuracy gates (added in v2)
+
+- [ ] No security-sensitive API (postMessage `"*"`, innerHTML, eval, raw SQL,
+      etc. — see [security-flags.md](security-flags.md)) appears in a snippet
+      without a `// SECURITY:` comment OR is flagged as an anti-pattern.
+- [ ] Every "default" / "implicit" / "automatic" / "by default" claim about a
+      library cites a real source — either a `file:line` in this repo that
+      sets the value, or a context7/web fetch of the library's docs for the
+      exact version in use. Unverified default claims have been dropped.
+- [ ] Every gotcha that names a config knob (mode, retry, staleTime, timeout,
+      etc.) either points at a config file in this repo or is hedged with the
+      library name + version (e.g., "RHF 7.x defaults to ...").
+- [ ] If the skill makes a claim that a `CLAUDE.md` / `AGENTS.md` gotcha
+      contradicts, the contradiction is logged in the Phase 5 summary so the
+      user can resolve it.
+
 ---
 
 ## Description Trigger Examples
