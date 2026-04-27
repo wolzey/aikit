@@ -57,20 +57,23 @@ Options:
 After running `/conjure` in a NestJS + Prisma project, your repo gets:
 
 ```
-.claude/skills/
-  nestjs/
-    SKILL.md              # Auto-loads when editing NestJS services
-    references/
-      patterns.md         # Detailed patterns with file references
-  prisma/
-    SKILL.md              # Auto-loads when touching database code
-    references/
-      patterns.md
-      migrations.md
-  typescript/
-    SKILL.md              # Auto-loads for any .ts/.tsx file
-    references/
-      patterns.md
+.claude/
+  CLAUDE.md               # Repo overview, commands, architecture (Claude Code)
+  skills/
+    nestjs/
+      SKILL.md            # Auto-loads when editing NestJS services
+      references/
+        patterns.md       # Detailed patterns with file references
+    prisma/
+      SKILL.md            # Auto-loads when touching database code
+      references/
+        patterns.md
+        migrations.md
+    typescript/
+      SKILL.md            # Auto-loads for any .ts/.tsx file
+      references/
+        patterns.md
+AGENTS.md                 # Same content as CLAUDE.md, for Codex / Cursor / etc.
 ```
 
 Each generated skill contains real code snippets from your repo, not generic documentation. Claude uses these to write code that matches your existing patterns.
