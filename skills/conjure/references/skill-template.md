@@ -166,6 +166,11 @@ Before writing a generated skill, verify:
 - [ ] If the skill makes a claim that a `CLAUDE.md` / `AGENTS.md` gotcha
       contradicts, the contradiction is logged in the Phase 5 summary so the
       user can resolve it.
+- [ ] Every link to another skill (in "Related Skills" or in an `AGENTS.md`
+      manifest row) has been verified against `git ls-files` — NOT the local
+      filesystem. macOS / Windows are case-insensitive; GitHub and Linux CI
+      are case-sensitive. Links to `SKILL.md` may need to be `skill.md`, and
+      some skills are single files (no `/SKILL.md` suffix).
 
 ---
 

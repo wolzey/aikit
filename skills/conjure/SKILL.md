@@ -259,6 +259,29 @@ The "When working on..." column should describe specific triggers (file globs, d
 
 If updating an existing AGENTS.md, preserve any existing content and merge new sections. Do not overwrite user-written content. Add a comment `<!-- Updated by /conjure on YYYY-MM-DD -->` at the bottom.
 
+### Step 5 — Validate manifest links case-sensitively
+
+Every manifest link MUST be verified against `git ls-files` — NOT against the local filesystem. macOS APFS and Windows NTFS are case-insensitive by default; GitHub and Linux CI are case-sensitive. A link that resolves locally can 404 on GitHub.
+
+Run this check before writing the file:
+
+```bash
+tracked=$(git ls-files .claude/skills)
+grep -oE '\]\(\.claude/skills/[A-Za-z0-9_./-]+\)' AGENTS.md \
+  | sed -E 's/^\]\(//; s/\)$//' \
+  | sort -u \
+  | while read p; do
+      if echo "$tracked" | grep -Fxq "$p"; then echo "OK   $p"; else echo "MISS $p"; fi
+    done
+```
+
+If any line returns `MISS`, fix the link before proceeding. Two patterns that bite repeatedly:
+
+- **Case mismatch** — some skills use lowercase `skill.md`, others use `SKILL.md`. Always link to the exact tracked filename, not the convention you assume.
+- **File-vs-directory** — some skills are a single markdown file at `.claude/skills/<name>` with no `SKILL.md` inside. Don't append `/SKILL.md` to those.
+
+Existing skills authored outside `/conjure` are the most common offenders. Generated skills always use uppercase `SKILL.md` in a directory; pre-existing ones may not.
+
 ---
 
 ## Phase 5: Format generated files
