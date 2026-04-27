@@ -199,7 +199,31 @@ If the user says yes:
 - Reuse the same content structure as [claude-md-template.md](references/claude-md-template.md) — the body content is identical.
 - Write to `AGENTS.md` at the repo root (NOT under `.claude/`).
 - If a CLAUDE.md was generated in Phase 4, you may copy its content directly to AGENTS.md to keep them in sync.
-- Skip the "Generated Skills" section's `.claude/skills/` paths if they would not apply to non-Claude tools; otherwise leave the section in — users of other tools may still find the skill references useful as documentation.
+
+### Step 4 — Add the skill manifest
+Unlike Claude Code, Codex / Cursor / other tools do NOT auto-load files in `.claude/skills/`. To make the generated skills useful to those tools, AGENTS.md MUST include a **Repo-Specific Patterns** section that acts as a manifest — listing each generated skill, what it covers, and explicitly instructing the agent to read it on demand.
+
+Replace the standard "Generated Skills" section with this manifest:
+
+```markdown
+## Repo-Specific Patterns
+
+This repo has detailed, repo-specific guidance for each technology in
+`.claude/skills/<tech>/SKILL.md`. **Read the relevant skill file before writing
+or modifying code that touches that technology** — the skills contain real
+patterns and conventions extracted from this codebase.
+
+| When working on... | Read |
+|--------------------|------|
+| <NestJS modules, services, controllers, decorators> | [.claude/skills/nestjs/SKILL.md](.claude/skills/nestjs/SKILL.md) |
+| <Prisma schema, queries, migrations> | [.claude/skills/prisma/SKILL.md](.claude/skills/prisma/SKILL.md) |
+| <any .ts / .tsx file> | [.claude/skills/typescript/SKILL.md](.claude/skills/typescript/SKILL.md) |
+
+Each skill's `references/` directory contains additional detail (patterns,
+testing, migrations, etc.) — read those when the SKILL.md points to them.
+```
+
+The "When working on..." column should describe specific triggers (file globs, decorators, function names) — pulled from each skill's frontmatter `description` field. Be concrete enough that an agent can pattern-match its current task against the row without reading every file.
 
 If updating an existing AGENTS.md, preserve any existing content and merge new sections. Do not overwrite user-written content. Add a comment `<!-- Updated by /conjure on YYYY-MM-DD -->` at the bottom.
 
