@@ -18,6 +18,8 @@ Scan the current repository, discover every significant technology in use, then 
 
 Optionally create or update a `.claude/CLAUDE.md` with a repo overview, commands, and architecture summary. Also optionally create or update an `AGENTS.md` at the repo root — an open standard supported by Codex, Cursor, VS Code, Gemini, and other AI coding tools — using the same content.
 
+The flow is: **discover → analyze (with security + claim verification) → generate skills → derive CLAUDE.md/AGENTS.md from those skills (not the other way around) → format → summarize**. Two passes during analysis (security flagging from [security-flags.md](references/security-flags.md) and claim verification via context7/docs) and one consistency check during synthesis are what keep generated content accurate and safe.
+
 ---
 
 ## Phase 1: Discovery
@@ -84,10 +86,16 @@ For each confirmed technology, launch a **parallel Explore agent** (up to 5 at a
 - **Patterns**: How is this technology used? Constructor patterns, decorator usage, module organization, component structure, hook patterns, query patterns, etc. Find 3-5 concrete patterns with file path references.
 - **Conventions**: Naming (files, classes, functions, variables), directory structure, import ordering, export style. Be specific — "controllers use `AuthGuard`" not "use guards."
 - **Error handling**: How does this repo handle errors with this technology? Custom exceptions? Error boundaries? Validation pipes?
-- **Anti-patterns**: Any inconsistencies, code smells, or patterns that diverge from best practices for this technology. At least 1.
+- **Anti-patterns**: At least 1. Sources to scan:
+  - **Repo inconsistencies** — legacy file uses pattern A, new code uses B
+  - **Dangerous-but-functional patterns** — work today but fail under attack/scale (see Security Pass below)
+  - **Library-version footguns** — deprecated APIs still in use
+  - **Cross-cutting misuse** — forms bypassing the project's form wrapper, raw `fetch` instead of the project's data layer, etc.
 - **Key files**: 3-5 file paths that serve as the best examples of this technology's usage.
 - **Version**: The exact version in use if detectable.
 - **Related technologies**: Which other detected technologies does this one interact with?
+- **Security pass**: For every code snippet you record, scan for security-sensitive APIs from [security-flags.md](references/security-flags.md). If a snippet uses one, the snippet MUST carry a `// SECURITY:` comment explaining the risk and what new code should do instead. Treat existing usage as "WARNING: existing pattern" rather than canonical.
+- **Claim verification**: Any statement of the form *"the default is X"* / *"implicitly does X"* / *"by default this..."* MUST be backed by either (a) a code line in this repo that sets the value (cite `file:line`), or (b) a context7 / web fetch of the library's official docs for the exact version in use. If neither is available, drop the claim. Do NOT rely on training-data knowledge of framework defaults — they drift between major versions.
 
 **Agent prompt template:**
 ```
@@ -98,15 +106,38 @@ Detection signals found: {signals}
 Read 5-10 representative files that use {technology}. For each file, note:
 - What patterns it demonstrates
 - How it follows (or breaks) {technology} conventions
+- Whether any snippet uses a security-sensitive API (see SECURITY_PASS below)
 
 Then synthesize your findings into:
-1. PATTERNS: 3-5 concrete patterns with file:line references
-2. CONVENTIONS: Naming, structure, imports specific to this repo
-3. ERROR_HANDLING: How errors are handled with this technology
-4. ANTI_PATTERNS: At least 1 inconsistency or code smell
-5. KEY_FILES: 3-5 best example files
-6. VERSION: Exact version if found
-7. RELATED: Other technologies this interacts with
+1. PATTERNS: 3-5 concrete patterns with file:line references.
+   For each snippet: if it uses a sensitive API, annotate with `// SECURITY:`
+   instead of presenting it as canonical.
+2. CONVENTIONS: Naming, structure, imports specific to this repo.
+3. ERROR_HANDLING: How errors are handled with this technology.
+4. ANTI_PATTERNS: At least 1. Look for: repo inconsistencies, dangerous-but-
+   functional patterns, deprecated APIs, cross-cutting misuse.
+5. KEY_FILES: 3-5 best example files.
+6. VERSION: Exact version if found (read from lockfile / package manifest).
+7. RELATED: Other technologies this interacts with.
+8. SECURITY_PASS: Scan every collected snippet for these sensitive APIs:
+     - window.postMessage(..., "*") — wildcard targetOrigin
+     - innerHTML, dangerouslySetInnerHTML, outerHTML
+     - eval, new Function, setTimeout(string)
+     - child_process.exec/execSync with interpolated input
+     - SQL string concatenation (raw queries, .raw())
+     - jwt.decode without verify
+     - CORS Access-Control-Allow-Origin: *
+     - cookie writes without httpOnly/Secure/SameSite
+     - regex constructed from user input (new RegExp(userInput))
+     - fs operations on user-controlled paths
+   Where found, attach `// SECURITY:` to the snippet (not as a separate
+   anti-pattern) so the warning travels with the code.
+9. CLAIM_VERIFICATION: Any "the default is X", "implicitly does X", "by
+   default this..." claim MUST be backed by either:
+     (a) a code line in THIS repo that sets it (cite file:line), OR
+     (b) a context7 / web fetch of the library's docs for the exact version.
+   If neither is available, drop the claim. Library defaults drift between
+   major versions; do not rely on training-data knowledge.
 
 Be specific to THIS repo. Do not give generic {technology} documentation.
 ```
@@ -171,7 +202,11 @@ If the user says yes, follow [claude-md-template.md](references/claude-md-templa
 - Conventions from .editorconfig, .prettierrc, .eslintrc, commit history
 - Add a "Generated Skills" section linking to each `.claude/skills/<tech>/`
 
-If updating an existing CLAUDE.md, preserve any existing content and merge new sections. Do not overwrite user-written content.
+**Derive gotchas from skills, do not author them independently.** The "Critical Gotchas" / "Conventions" / "Anti-patterns" bullets in CLAUDE.md must each be lifted from the corresponding generated tech skill (where one exists). The tech skills were extracted from real code via Phase 2 agents; CLAUDE.md is the synthesis layer over them, not a parallel authoring layer. For every bullet copied or written:
+1. Verify the claim against the actual repo (read the file it references). Drop anything you cannot verify.
+2. Run a CONSISTENCY CHECK: if the bullet mentions a technology that has a generated skill, the wording must not contradict that skill's `references/patterns.md`. Flag contradictions to the user; do not silently merge.
+
+If updating an existing CLAUDE.md, preserve any existing content and merge new sections. Do not overwrite user-written content. If the existing CLAUDE.md contradicts a freshly generated tech skill, surface the contradiction in the summary so the user can decide which is correct.
 
 ---
 
@@ -194,7 +229,8 @@ Use AskUserQuestion:
 If the user says yes:
 - Reuse the same content structure as [claude-md-template.md](references/claude-md-template.md) — the body content is identical.
 - Write to `AGENTS.md` at the repo root (NOT under `.claude/`).
-- If a CLAUDE.md was generated in Phase 4, you may copy its content directly to AGENTS.md to keep them in sync.
+- If a CLAUDE.md was generated in Phase 4, **re-derive AGENTS.md from the same skill sources** — do NOT bulk-copy CLAUDE.md content. Bulk-copy inherits any bug; re-derivation breaks the chain. The same consistency check from Phase 4 Step 3 applies: every gotcha bullet must agree with its underlying tech skill.
+- If you must copy from CLAUDE.md for speed (it is freshly generated this run), re-validate every gotcha against its tech skill before writing. Flag contradictions to the user.
 
 ### Step 4 — Add the skill manifest
 Unlike Claude Code, Codex / Cursor / other tools do NOT auto-load files in `.claude/skills/`. To make the generated skills useful to those tools, AGENTS.md MUST include a **Repo-Specific Patterns** section that acts as a manifest — listing each generated skill, what it covers, and explicitly instructing the agent to read it on demand.
@@ -225,7 +261,47 @@ If updating an existing AGENTS.md, preserve any existing content and merge new s
 
 ---
 
-## Phase 5: Summary
+## Phase 5: Format generated files
+
+Before printing the summary, run the repo's formatter on every file conjure created or modified in this run. Skipping this is the most common reason a fresh `/conjure` run fails CI on first push.
+
+### Step 1 — Detect the formatter
+
+Inspect the repo for a known formatter, in this priority order:
+
+1. `package.json` `scripts.format` / `scripts.format:fix` / `scripts.lint:fix` (Node)
+2. `oxfmt` config (`.oxfmtrc.json`, `.oxfmtrc`)
+3. `prettier` config (`.prettierrc*`, `prettier.config.*`, `prettier` key in `package.json`)
+4. `biome.json` / `biome.jsonc`
+5. `dprint.json` / `.dprint.json`
+6. Python: `ruff.toml`, `pyproject.toml` with `[tool.ruff]` or `[tool.black]`
+7. Go: `gofmt` / `goimports` (always available with Go installed)
+8. Rust: `rustfmt.toml` or just run `cargo fmt`
+
+### Step 2 — Run it on the new files only
+
+Do NOT run the formatter across the whole repo (that would create unrelated diffs). Pass only the files conjure created or modified:
+
+```bash
+# Example: oxfmt-based monorepo
+pnpm oxfmt <generated-file-1> <generated-file-2> ...
+
+# Example: prettier
+pnpm prettier --write <files...>
+
+# Example: biome
+pnpm biome format --write <files...>
+```
+
+### Step 3 — Verify
+
+Run the format-check variant on the same files (e.g., `oxfmt --check`, `prettier --check`, `biome format`) and confirm zero issues. If the project also has a husky / pre-commit hook, mention in the summary that the hook will format-on-commit and the user should re-run `git add` after a successful commit.
+
+If no formatter is detected, skip silently — do not invent one.
+
+---
+
+## Phase 6: Summary
 
 Print a summary table:
 
@@ -238,7 +314,13 @@ typescript          | .claude/skills/typescript/SKILL.md     | Updated
 jest                | .claude/skills/jest/SKILL.md + 1 ref   | Skipped (exists)
 CLAUDE.md           | .claude/CLAUDE.md                      | Created
 AGENTS.md           | AGENTS.md                              | Created
+Formatter           | oxfmt (11 files)                       | Passed
 ```
+
+Also surface any items the user must resolve manually:
+
+- **Contradictions flagged in Phase 4/4b** — list each CLAUDE.md or AGENTS.md gotcha that disagrees with its tech skill, with both wordings and a recommendation.
+- **Unverified claims dropped in Phase 2** — if any agent dropped a "default" claim because it could not be verified, list the technology so the user knows the gotcha section may be thinner than expected.
 
 Then print: "Skills conjured. Claude will now auto-load these when working with relevant files in this repo."
 
