@@ -1,6 +1,6 @@
 ---
 name: conjure
-description: 'Analyze a repository to discover technologies, extract patterns and conventions, and generate per-technology Claude skills. Use when the user asks to "conjure skills", "analyze this repo", "generate skills for this codebase", "index the codebase", "scan technologies", or "set up Claude for this repo".'
+description: 'Analyze a repository to discover technologies, extract patterns and conventions, and generate per-technology Agent Skills for pi, Claude Code, and AGENTS.md-compatible tools. Use when the user asks to "conjure skills", "analyze this repo", "generate skills for this codebase", "index the codebase", "scan technologies", or "set up AI guidance for this repo".'
 argument-hint: [--update] [--only tech1,tech2] [--skip-claude-md] [--skip-agents-md]
 ---
 
@@ -14,9 +14,9 @@ If no arguments are provided, run a full analysis.
 
 ## What This Skill Does
 
-Scan the current repository, discover every significant technology in use, then generate a set of `.claude/skills/<technology>/` directories — each containing a `SKILL.md` and `references/patterns.md` — that Claude auto-loads as background knowledge when working with relevant files.
+Scan the current repository, discover every significant technology in use, then generate a set of portable `.agents/skills/<technology>/` directories — each containing a `SKILL.md` and `references/patterns.md` — that Agent Skills-compatible harnesses can load as repo-specific background knowledge. When Claude Code compatibility is desired, also mirror those skills to `.claude/skills/<technology>/`.
 
-Optionally create or update a `.claude/CLAUDE.md` with a repo overview, commands, and architecture summary. Also optionally create or update an `AGENTS.md` at the repo root — an open standard supported by Codex, Cursor, VS Code, Gemini, and other AI coding tools — using the same content.
+Optionally create or update a `.claude/CLAUDE.md` with a repo overview, commands, and architecture summary. Also optionally create or update an `AGENTS.md` at the repo root — an open standard supported by Codex, Cursor, VS Code, Gemini, pi, and other AI coding tools — using the same content.
 
 The flow is: **discover → analyze (with security + claim verification) → generate skills → derive CLAUDE.md/AGENTS.md from those skills (not the other way around) → format → summarize**. Two passes during analysis (security flagging from [security-flags.md](references/security-flags.md) and claim verification via context7/docs) and one consistency check during synthesis are what keep generated content accurate and safe.
 
@@ -30,7 +30,7 @@ Reference [technology-signals.md](references/technology-signals.md) for the comp
 Look for `.git/`, `package.json`, `go.mod`, `Cargo.toml`, or similar markers. If none found, treat the current directory as root.
 
 ### Step 2 — Check for existing skills
-Glob for `.claude/skills/*/SKILL.md`. If found, note which technologies already have skills. If `--update` was NOT passed, these will be skipped later (after confirmation).
+Glob for `.agents/skills/*/SKILL.md` and `.claude/skills/*/SKILL.md`. If found, note which technologies already have skills. If `--update` was NOT passed, these will be skipped later (after confirmation).
 
 ### Step 3 — Scan package manifests
 Read all package manifests found at the repo root and in workspace packages:
@@ -149,12 +149,14 @@ Be specific to THIS repo. Do not give generic {technology} documentation.
 For each technology, reference [skill-template.md](references/skill-template.md) for the output format.
 
 ### Step 1 — Check for existing skill
-If `.claude/skills/<tech>/SKILL.md` already exists and `--update` was NOT passed, skip it.
+If `.agents/skills/<tech>/SKILL.md` or `.claude/skills/<tech>/SKILL.md` already exists and `--update` was NOT passed, skip it.
 
 ### Step 2 — Create directory
 ```bash
-mkdir -p .claude/skills/<tech>/references
+mkdir -p .agents/skills/<tech>/references
 ```
+
+If Claude Code compatibility is desired, also prepare the matching `.claude/skills/<tech>/references` directory and keep its contents in sync with the portable `.agents/skills` version.
 
 ### Step 3 — Write SKILL.md
 Generate the skill following the template. Critical requirements:
@@ -200,7 +202,7 @@ If the user says yes, follow [claude-md-template.md](references/claude-md-templa
 - Commands from package.json `scripts`, Makefile targets, or CI workflow files
 - Architecture from the actual directory tree
 - Conventions from .editorconfig, .prettierrc, .eslintrc, commit history
-- Add a "Generated Skills" section linking to each `.claude/skills/<tech>/`
+- Add a "Generated Skills" section linking to each `.agents/skills/<tech>/` and, when present, matching `.claude/skills/<tech>/`
 
 **Derive gotchas from skills, do not author them independently.** The "Critical Gotchas" / "Conventions" / "Anti-patterns" bullets in CLAUDE.md must each be lifted from the corresponding generated tech skill (where one exists). The tech skills were extracted from real code via Phase 2 agents; CLAUDE.md is the synthesis layer over them, not a parallel authoring layer. For every bullet copied or written:
 1. Verify the claim against the actual repo (read the file it references). Drop anything you cannot verify.
@@ -241,15 +243,15 @@ Replace the standard "Generated Skills" section with this manifest:
 ## Repo-Specific Patterns
 
 This repo has detailed, repo-specific guidance for each technology in
-`.claude/skills/<tech>/SKILL.md`. **Read the relevant skill file before writing
+`.agents/skills/<tech>/SKILL.md` (or `.claude/skills/<tech>/SKILL.md` when only Claude-compatible skills exist). **Read the relevant skill file before writing
 or modifying code that touches that technology** — the skills contain real
 patterns and conventions extracted from this codebase.
 
 | When working on... | Read |
 |--------------------|------|
-| <NestJS modules, services, controllers, decorators> | [.claude/skills/nestjs/SKILL.md](.claude/skills/nestjs/SKILL.md) |
-| <Prisma schema, queries, migrations> | [.claude/skills/prisma/SKILL.md](.claude/skills/prisma/SKILL.md) |
-| <any .ts / .tsx file> | [.claude/skills/typescript/SKILL.md](.claude/skills/typescript/SKILL.md) |
+| <NestJS modules, services, controllers, decorators> | [.agents/skills/nestjs/SKILL.md](.agents/skills/nestjs/SKILL.md) |
+| <Prisma schema, queries, migrations> | [.agents/skills/prisma/SKILL.md](.agents/skills/prisma/SKILL.md) |
+| <any .ts / .tsx file> | [.agents/skills/typescript/SKILL.md](.agents/skills/typescript/SKILL.md) |
 
 Each skill's `references/` directory contains additional detail (patterns,
 testing, migrations, etc.) — read those when the SKILL.md points to them.
@@ -266,8 +268,8 @@ Every manifest link MUST be verified against `git ls-files` — NOT against the 
 Run this check before writing the file:
 
 ```bash
-tracked=$(git ls-files .claude/skills)
-grep -oE '\]\(\.claude/skills/[A-Za-z0-9_./-]+\)' AGENTS.md \
+tracked=$(git ls-files .agents/skills .claude/skills)
+grep -oE '\]\(\.(agents|claude)/skills/[A-Za-z0-9_./-]+\)' AGENTS.md \
   | sed -E 's/^\]\(//; s/\)$//' \
   | sort -u \
   | while read p; do
@@ -345,7 +347,7 @@ Also surface any items the user must resolve manually:
 - **Contradictions flagged in Phase 4/4b** — list each CLAUDE.md or AGENTS.md gotcha that disagrees with its tech skill, with both wordings and a recommendation.
 - **Unverified claims dropped in Phase 2** — if any agent dropped a "default" claim because it could not be verified, list the technology so the user knows the gotcha section may be thinner than expected.
 
-Then print: "Skills conjured. Claude will now auto-load these when working with relevant files in this repo."
+Then print: "Skills conjured. Pi and other Agent Skills-compatible tools can now discover the generated `.agents/skills`; Claude Code can use the mirrored `.claude/skills` when generated."
 
 ---
 

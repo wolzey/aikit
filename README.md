@@ -1,8 +1,20 @@
 # aikit
 
-A toolkit of [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skills for codebase analysis and developer productivity.
+A toolkit for generating repo-specific AI coding guidance for [pi](https://pi.dev), [Claude Code](https://docs.anthropic.com/en/docs/claude-code), and AGENTS.md-compatible agents.
 
 ## Install
+
+### pi
+
+Install as a pi package:
+
+```bash
+pi install git:github.com/wolzey/aikit
+```
+
+This loads aikit's pi prompt template, bundled skills, and always-on extension. The extension watches file/tool activity and injects lightweight reminders to read generated repo-specific skills from `.agents/skills` or `.claude/skills` when relevant.
+
+### Claude Code
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/wolzey/aikit/main/install.sh | bash
@@ -57,34 +69,39 @@ Options:
 After running `/conjure` in a NestJS + Prisma project, your repo gets:
 
 ```
-.claude/
-  CLAUDE.md               # Repo overview, commands, architecture (Claude Code)
+.agents/
   skills/
     nestjs/
-      SKILL.md            # Auto-loads when editing NestJS services
+      SKILL.md            # Portable Agent Skill for NestJS repo patterns
       references/
         patterns.md       # Detailed patterns with file references
     prisma/
-      SKILL.md            # Auto-loads when touching database code
+      SKILL.md            # Portable Agent Skill for database patterns
       references/
         patterns.md
         migrations.md
     typescript/
-      SKILL.md            # Auto-loads for any .ts/.tsx file
+      SKILL.md            # Portable Agent Skill for .ts/.tsx conventions
       references/
         patterns.md
-AGENTS.md                 # Same content as CLAUDE.md, for Codex / Cursor / etc.
+.claude/                  # Optional Claude Code mirror
+  CLAUDE.md               # Repo overview, commands, architecture (Claude Code)
+  skills/
+    ...
+AGENTS.md                 # Repo overview + manifest linking to generated skills
 ```
+
+When installed in pi, aikit's extension can notice reads/edits/writes to matching files and nudge the model to load the relevant generated skill.
 
 Each generated skill contains real code snippets from your repo, not generic documentation. Claude uses these to write code that matches your existing patterns.
 
-## How auto-loading works
+## How loading works
 
-Claude Code reads the `description` field from every skill's `SKILL.md` frontmatter. Generated skills include specific trigger contexts like:
+Claude Code reads the `description` field from every skill's `SKILL.md` frontmatter and can auto-load matching skills. Generated skills include specific trigger contexts like:
 
 > *Use when: editing .ts files in apps/ directories, working with @Module/@Injectable decorators, creating NestJS modules/services/controllers*
 
-When you're working on a file that matches those triggers, Claude loads the skill automatically — giving it instant context about how your repo uses that technology.
+Pi uses progressive disclosure instead: it discovers skill descriptions, then the model reads full `SKILL.md` files on demand. Aikit's pi extension bridges the gap by watching file/tool activity and injecting a short reminder to read the relevant generated skill before modifying matching code.
 
 ## Contributing
 
