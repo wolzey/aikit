@@ -1,0 +1,16 @@
+{
+  "name": "aikit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Repo-specific AI guidance generator for Claude Code, pi, and AGENTS.md-compatible agents.",
+  "keywords": ["pi-package", "agent-skills", "claude-code", "agents-md"],
+  "license": "MIT",
+  "pi": {
+    "extensions": ["./extensions/aikit/index.ts"],
+    "skills": ["./skills"],
+    "prompts": ["./prompts"]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  }
+}
