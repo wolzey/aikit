@@ -1,7 +1,7 @@
 ---
 name: conjure
 description: 'Analyze a repository to discover technologies, extract patterns and conventions, and generate per-technology Agent Skills for pi, Claude Code, and AGENTS.md-compatible tools. Use when the user asks to "conjure skills", "analyze this repo", "generate skills for this codebase", "index the codebase", "scan technologies", or "set up AI guidance for this repo".'
-argument-hint: [--update] [--only tech1,tech2] [--skip-claude-md] [--skip-agents-md]
+argument-hint: "[--update] [--only tech1,tech2] [--skip-claude-md] [--skip-agents-md]"
 ---
 
 Parse `$ARGUMENTS` as follows:
