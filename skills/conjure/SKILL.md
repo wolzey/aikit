@@ -70,7 +70,12 @@ Jest           | Medium     | jest dependency, *.spec.ts files found
 
 If `--only` was passed, filter to just those technologies.
 
-Ask the user to confirm the list using AskUserQuestion. Present the detected technologies as multi-select options so the user can deselect any they don't want skills for.
+Ask the user to confirm the list. Use the question mechanism available in the current agent:
+- In pi, use the built-in `ask_question` tool when available.
+- In Claude Code, use `AskUserQuestion` when available.
+- If neither tool is available, ask directly in chat and wait for the user's answer before continuing.
+
+Present the detected technologies as multi-select options when the environment supports it so the user can deselect any they don't want skills for. If multi-select is not available, ask the user to list any technologies to remove or confirm all.
 
 ---
 
@@ -192,7 +197,7 @@ Skip this phase if `--skip-claude-md` was passed.
 Look for `.claude/CLAUDE.md` in the repo root.
 
 ### Step 2 — Ask the user
-Use AskUserQuestion:
+Ask using the question mechanism available in the current agent (`ask_question` in pi, `AskUserQuestion` in Claude Code, or direct chat if no question tool is available):
 - If CLAUDE.md exists: "A .claude/CLAUDE.md already exists. Would you like to update it with findings from this analysis, or leave it as-is?"
 - If no CLAUDE.md: "Would you like to create a .claude/CLAUDE.md with a repo overview, commands, and architecture summary?"
 
@@ -222,7 +227,7 @@ Skip this phase if `--skip-agents-md` was passed.
 Look for `AGENTS.md` at the repo root.
 
 ### Step 2 — Ask the user
-Use AskUserQuestion:
+Ask using the question mechanism available in the current agent (`ask_question` in pi, `AskUserQuestion` in Claude Code, or direct chat if no question tool is available):
 - If a CLAUDE.md was just created/updated in Phase 4: "Would you like to also generate an `AGENTS.md` at the repo root for Codex / Cursor / other AI tools? It will mirror the CLAUDE.md content."
 - If AGENTS.md already exists: "An `AGENTS.md` already exists at the repo root. Would you like to update it with findings from this analysis, or leave it as-is?"
 - If no AGENTS.md and no CLAUDE.md was generated: "Would you like to create an `AGENTS.md` at the repo root for Codex / Cursor / other AI tools with a repo overview, commands, and architecture summary?"
