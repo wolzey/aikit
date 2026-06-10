@@ -14,10 +14,13 @@ export default function aikit(pi: ExtensionAPI) {
   const touchedPaths = new Set<string>();
 
   pi.on("resources_discover", async (event) => {
-    const skillPaths = [
-      path.join(event.cwd, ".agents", "skills"),
-      path.join(event.cwd, ".claude", "skills"),
-    ].filter(existsSync);
+    const agentsSkills = path.join(event.cwd, ".agents", "skills");
+    const claudeSkills = path.join(event.cwd, ".claude", "skills");
+    const skillPaths = existsSync(agentsSkills)
+      ? [agentsSkills]
+      : existsSync(claudeSkills)
+        ? [claudeSkills]
+        : [];
 
     return skillPaths.length > 0 ? { skillPaths } : undefined;
   });
